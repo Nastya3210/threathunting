@@ -1,0 +1,189 @@
+---
+title: "Основы обработки данных с помощью R и Dplyr"
+author: "nastya5908@yandex.ru"
+editor: visual
+format: 
+  md:
+    output-file: README.md
+---
+
+## Цель работы
+
+1.  Развить практические навыки использования языка программирования R для обработки данных
+2.  Закрепить знания базовых типов данных языка R
+3.  Развить практические навыки использования функций обработки данных пакета `dplyr` – функции `select(), filter(), mutate(), arrange(), group_by()`
+
+## Исходные данные
+
+1.  Программное обеспечение Windows 11
+2.  Rstudio Desktop
+3.  Интерпретатор языка R 4.5.1
+
+## План:
+
+1.  Установить пакет nycflights13
+
+2.  Проанализировать встроенные в пакет nycflights13 наборы данных с помощью языка R и ответить на вопросы
+
+3.  Составить отчет и выложить его и исходный qmd/rmd файл в свой репозиторий
+
+## Шаги
+
+#### 1. Установим и подключим пакет nycflights13
+
+```{r}
+library(nycflights13)
+```
+
+#### 2. Подключим пакет dplyr
+
+```{r}
+library(dplyr)
+```
+
+#### 3. Проанализируем встроенные в пакет наборы данных
+
+1\. Сколько встроенных в пакет nycflights13 датафреймов?
+
+```{r}
+data(package="nycflights13")$results[,3]
+```
+
+2\. Сколько строк в каждом датафрейме?
+
+Airlines:
+
+```{r}
+airlines|>nrow()
+```
+
+Airports:
+
+```{r}
+airports|>nrow()
+```
+
+Flights:
+
+```{r}
+flights|>nrow()
+```
+
+Planes:
+
+```{r}
+planes|>nrow()
+```
+
+Weather:
+
+```{r}
+weather|>nrow()
+```
+
+3\. Сколько столбцов в каждом датафрейме?
+
+Airlines:
+
+```{r}
+airlines|>nrow()
+```
+
+Airports:
+
+```{r}
+airports|>ncol()
+```
+
+Flights:
+
+```{r}
+flights|>ncol()
+```
+
+Planes:
+
+```{r}
+planes|>ncol()
+```
+
+Weather:
+
+```{r}
+weather|>ncol()
+```
+
+4\. Как просмотреть примерный вид датафрейма?
+
+Airlines:
+
+```{r}
+airlines|>glimpse()
+```
+
+Airports:
+
+```{r}
+airports|>glimpse()
+```
+
+Flights:
+
+```{r}
+flights|>glimpse()
+```
+
+Planes:
+
+```{r}
+planes|>glimpse()
+```
+
+Weather:
+
+```{r}
+weather|>glimpse()
+```
+
+5\. Сколько компаний-перевозчиков (carrier) учитывают эти наборы данных (представлено в наборах данных)?
+
+```{r}
+airlines|> select(carrier) |> unique() |> count()
+```
+
+6\.  Сколько рейсов принял аэропорт John F Kennedy Intl в мае?
+```{r}
+left_join(airports, flights, by = c("faa"="origin")) |> filter(name == "John F Kennedy Intl" & month == 5) |> count()
+```
+
+7\.  Какой самый северный аэропорт?
+```{r}
+airports|> arrange(desc(lon)) |> select(name) |> head(1)
+```
+
+8\.  Какой аэропорт самый высокогорный (находится выше всех над уровнем моря)?
+```{r}
+airports|> arrange(desc(alt)) |> select(name) |> head(1)
+```
+
+9\.  Какие бортовые номера у самых старых самолетов?
+```{r}
+planes|> arrange(year) |> select(tailnum) |> head(10)
+```
+
+10\. Какая средняя температура воздуха была в сентябре в аэропорту John F Kennedy Intl (в градусах Цельсия).
+```{r}
+left_join(weather, airports, by = c("origin"="faa")) |> filter(name == "John F Kennedy Intl" & month == 9) |> summarise(avg_temp = 5/9 * (mean(temp)-32)) |> select(avg_temp)
+```
+11\. Самолеты какой авиакомпании совершили больше всего вылетов в июне?
+```{r}
+left_join(flights, airlines, by = "carrier") |> filter(month == 6) |> group_by(name) |> summarise(n = n()) |> arrange(desc(n)) |> select(name) |> head(1)
+```
+12\. Самолеты какой авиакомпании задерживались чаще других в 2013 году?
+```{r}
+left_join(flights, airlines, by = "carrier") |> filter(year == 2013 & arr_delay > 0) |> group_by(name) |> summarise(n = n()) |> arrange(desc(n)) |> select(name) |> head(1)
+```
+
+## Вывод
+
+В результате выполнения работы были получены практические навыки использования функций обработки данных пакета dplyr.
