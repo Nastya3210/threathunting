@@ -185,7 +185,7 @@ results <- map_dfr(top_10_dom, function(query) {
   geo <- get_geo(query)
 })
 
-print(results)
+as.data.frame(results)
 ```
 ## Вывод
 В результате выполнения работы были закреплены знания основных функций обработки данных экосистемы tidyverse и получены навыки исследования метаданных DNS трафика

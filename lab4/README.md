@@ -323,22 +323,42 @@ results <- map_dfr(top_10_dom, function(query) {
   geo <- get_geo(query)
 })
 
-print(results)
+as.data.frame(results)
 ```
 
-    # A tibble: 10 × 5
-       query                                               ip    country city  isp  
-       <chr>                                               <chr> <chr>   <chr> <chr>
-     1 "teredo.ipv6.microsoft.com"                         "ter… <NA>    <NA>  <NA> 
-     2 "tools.google.com"                                  "142… United… Moun… Goog…
-     3 "www.apple.com"                                     "2.1… United… Lond… Akam…
-     4 "time.apple.com"                                    "17.… United… Slou… Appl…
-     5 "safebrowsing.clients.google.com"                   "142… United… Moun… Goog…
-     6 "*\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x… "*\\… <NA>    <NA>  <NA> 
-     7 "WPAD"                                              "WPA… <NA>    <NA>  <NA> 
-     8 "44.206.168.192.in-addr.arpa"                       "44.… <NA>    <NA>  <NA> 
-     9 "HPE8AA67"                                          "HPE… <NA>    <NA>  <NA> 
-    10 "ISATAP"                                            "ISA… <NA>    <NA>  <NA> 
+                                                                         query
+    1                                                teredo.ipv6.microsoft.com
+    2                                                         tools.google.com
+    3                                                            www.apple.com
+    4                                                           time.apple.com
+    5                                          safebrowsing.clients.google.com
+    6  *\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00
+    7                                                                     WPAD
+    8                                              44.206.168.192.in-addr.arpa
+    9                                                                 HPE8AA67
+    10                                                                  ISATAP
+                                                                            ip
+    1                                                teredo.ipv6.microsoft.com
+    2                                                          142.250.129.113
+    3                                                 2a02:26f0:fd00:aa0::1aca
+    4                                                           17.253.108.125
+    5                                                          142.250.140.113
+    6  *\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00
+    7                                                                     WPAD
+    8                                              44.206.168.192.in-addr.arpa
+    9                                                                 HPE8AA67
+    10                                                                  ISATAP
+              country          city                 isp
+    1            <NA>          <NA>                <NA>
+    2   United States Mountain View          Google LLC
+    3  United Kingdom        London Akamai Technologies
+    4          France        Clichy          Apple Inc.
+    5   United States Mountain View          Google LLC
+    6            <NA>          <NA>                <NA>
+    7            <NA>          <NA>                <NA>
+    8            <NA>          <NA>                <NA>
+    9            <NA>          <NA>                <NA>
+    10           <NA>          <NA>                <NA>
 
 ## Вывод
 
