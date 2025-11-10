@@ -61,6 +61,12 @@ library(tidyverse)
 library(readr)
 ```
 
+``` r
+library(httr)
+```
+
+    Warning: пакет 'httr' был собран под R версии 4.5.2
+
 #### Подготовка данных
 
 1\. Импортируем данные DNS
@@ -163,6 +169,15 @@ length(unique(c(dns$source_ip, dns$destination_ip)))
 5\. Какое соотношение участников обмена внутри сети и участников
 обращений к внешним ресурсам?
 
+``` r
+un_ip <- unique(c(dns$source_ip, dns$destination_ip))
+int_ip <- un_ip[grepl("^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.)", un_ip)]
+ext_ip <- un_ip[!grepl("^(10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.)", un_ip)]
+length(int_ip)/length(ext_ip)
+```
+
+    [1] 13.77174
+
 6\. Найдите топ-10 участников сети, проявляющих наибольшую сетевую
 активность.
 
@@ -209,11 +224,76 @@ dns |> count(query, sort = TRUE) |> head(10)
 ) интервала времени между последовательными обращениями к топ-10
 доменам.
 
+``` r
+top_10_dom <- dns |> count(query, sort = TRUE) |> head(10) |> pull(query)
+dns |> filter(query %in% top_10_dom) |>
+     arrange(timestamp) |> group_by(query) |>
+     mutate(time = lead(timestamp) - timestamp) |>
+     filter(!is.na(time))|>
+     summarise(
+         min = min(time),
+         Q1 = quantile(time, 0.25),
+         median = median(time),
+         Q3 = quantile(time, 0.75),
+         max = max(time),
+         mean = mean(time)
+     )
+```
+
+    # A tibble: 10 × 7
+       query                                    min   Q1    median Q3    max   mean 
+       <chr>                                    <drt> <drt> <drtn> <drt> <drt> <drt>
+     1 "*\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\… 0 se… 0.14… 0.500…  1.5… 5272… 11.2…
+     2 "44.206.168.192.in-addr.arpa"            0 se… 2.08… 4.000… 20.0… 4967… 16.0…
+     3 "HPE8AA67"                               0 se… 0.75… 0.750… 25.4… 5004… 16.6…
+     4 "ISATAP"                                 0 se… 0.75… 0.759…  1.0… 5199… 17.4…
+     5 "WPAD"                                   0 se… 0.75… 0.750…  1.1… 5004… 12.6…
+     6 "safebrowsing.clients.google.com"        0 se… 0.00… 1.000…  2.0… 4995… 10.0…
+     7 "teredo.ipv6.microsoft.com"              0 se… 0.00… 0.000…  0.5… 5038…  2.9…
+     8 "time.apple.com"                         0 se… 0.36… 1.760…  4.7… 5092…  8.6…
+     9 "tools.google.com"                       0 se… 0.00… 0.000…  1.0… 5036…  8.1…
+    10 "www.apple.com"                          0 se… 0.00… 1.000…  3.0… 5096…  8.6…
+
 9\. Часто вредоносное программное обеспечение использует DNS канал в
 качестве канала управления, периодически отправляя запросы на
 подконтрольный злоумышленникам DNS сервер. По периодическим запросам на
 один и тот же домен можно выявить скрытый DNS канал. Есть ли такие IP
 адреса в исследуемом датасете?
+
+``` r
+dns |>
+  arrange(source_ip, query, timestamp) |>
+  group_by(source_ip, query) |>
+  mutate(time = as.numeric(lead(timestamp) - timestamp)) |>
+  filter(!is.na(time)) |>
+  summarise(requests = n() + 1,
+    avg_interval = mean(time)) |>
+  filter(requests >= 10, avg_interval <= 30) |>
+  group_by(source_ip) |>
+  summarise(
+    pd_domains = n(),
+    total_requests = sum(requests),
+  ) |>
+  arrange(desc(pd_domains))
+```
+
+    `summarise()` has grouped output by 'source_ip'. You can override using the
+    `.groups` argument.
+
+    # A tibble: 106 × 3
+       source_ip       pd_domains total_requests
+       <chr>                <int>          <dbl>
+     1 192.168.202.97         281           6614
+     2 192.168.202.71          51           1203
+     3 192.168.202.84          48           1157
+     4 10.10.117.210           47          69031
+     5 192.168.202.79          44           1141
+     6 192.168.202.100         37            578
+     7 192.168.202.103         28           9988
+     8 192.168.202.110         23           2378
+     9 192.168.202.106         18           1967
+    10 192.168.204.45          16            363
+    # ℹ 96 more rows
 
 #### Обогащение данных
 
@@ -221,4 +301,47 @@ dns |> count(query, sort = TRUE) |> head(10)
 для топ-10 доменов. Для этого можно использовать сторонние сервисы,
 например http://ip-api.com (API-эндпоинт – http://ip-api.com/json).
 
+``` r
+top_10_dom <- dns |> count(query, sort = TRUE) |> head(10) |> pull(query)
+
+get_geo <- function(query) {
+  tryCatch({
+    response <- GET(paste0("http://ip-api.com/json/", query))
+    data <- content(response, "parsed")
+    return(list(
+      query=query,
+      ip = data$query %||% NA,
+      country = data$country %||% NA,
+      city = data$city %||% NA, 
+      isp = data$isp %||% NA
+    ))
+  }, error = function(e) {
+    return(list(ip = NA, country = NA, city = NA, isp = NA))
+  })
+}
+results <- map_dfr(top_10_dom, function(query) {
+  geo <- get_geo(query)
+})
+
+print(results)
+```
+
+    # A tibble: 10 × 5
+       query                                               ip    country city  isp  
+       <chr>                                               <chr> <chr>   <chr> <chr>
+     1 "teredo.ipv6.microsoft.com"                         "ter… <NA>    <NA>  <NA> 
+     2 "tools.google.com"                                  "142… United… Moun… Goog…
+     3 "www.apple.com"                                     "2.1… United… Lond… Akam…
+     4 "time.apple.com"                                    "17.… United… Slou… Appl…
+     5 "safebrowsing.clients.google.com"                   "142… United… Moun… Goog…
+     6 "*\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x… "*\\… <NA>    <NA>  <NA> 
+     7 "WPAD"                                              "WPA… <NA>    <NA>  <NA> 
+     8 "44.206.168.192.in-addr.arpa"                       "44.… <NA>    <NA>  <NA> 
+     9 "HPE8AA67"                                          "HPE… <NA>    <NA>  <NA> 
+    10 "ISATAP"                                            "ISA… <NA>    <NA>  <NA> 
+
 ## Вывод
+
+В результате выполнения работы были закреплены знания основных функций
+обработки данных экосистемы tidyverse и получены навыки исследования
+метаданных DNS трафика
