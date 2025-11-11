@@ -36,10 +36,10 @@ nastya5908@yandex.ru
 4.  Проверим привязку данных - сделаем аналитический запрос для вывода
     первых 100 строк
 
-<!-- -->
-
-    SELECT * FROM `yaqry_dataset`
-    LIMIT 100;
+``` sql
+SELECT * FROM `yaqry_dataset`
+LIMIT 100;
+```
 
 ![](img/5.png)
 
@@ -49,27 +49,33 @@ nastya5908@yandex.ru
     принадлежащих интервалу 12-14. Определите количество хостов
     внутренней сети, представленных в датасете.
 
-<!-- -->
-
-    SELECT COUNT(distinct ip)
-    FROM (
-        SELECT src AS ip FROM `yaqry_dataset` 
-        WHERE src LIKE '12.%' OR src LIKE '13.%' OR src LIKE '14.%'
-        UNION
-        SELECT dst AS ip FROM `yaqry_dataset`
-        WHERE dst LIKE '12.%' OR dst LIKE '13.%' OR dst LIKE '14.%')
+``` sql
+SELECT COUNT(distinct ip)
+FROM (
+    SELECT src AS ip FROM `yaqry_dataset` 
+    WHERE src LIKE '12.%' OR src LIKE '13.%' OR src LIKE '14.%'
+    UNION
+    SELECT dst AS ip FROM `yaqry_dataset`
+    WHERE dst LIKE '12.%' OR dst LIKE '13.%' OR dst LIKE '14.%')
+```
 
 ![](img/6.png) 2. Определите суммарный объем исходящего трафика
 
-    SELECT SUM(bytes)
-    FROM `yaqry_dataset`
-    WHERE src LIKE '12.%' OR src LIKE '13.%' OR src LIKE '14.%';
+``` sql
+SELECT SUM(bytes)
+FROM `yaqry_dataset`
+WHERE (src LIKE '12.%' OR src LIKE '13.%' OR src LIKE '14.%') AND
+(dst NOT LIKE '12.%' AND dst NOT LIKE '13.%' AND dst NOT LIKE '14.%')
+```
 
 ![](img/7.png) 3. Определите суммарный объем входящего трафика
 
-    SELECT SUM(bytes)
-    FROM `yaqry_dataset`
-    WHERE dst LIKE '12.%' OR src LIKE '13.%' OR src LIKE '14.%';
+``` sql
+SELECT SUM(bytes)
+FROM `yaqry_dataset`
+WHERE (dst LIKE '12.%' OR dst LIKE '13.%' OR dst LIKE '14.%') AND
+(src NOT LIKE '12.%' AND src NOT LIKE '13.%' AND src NOT LIKE '14.%')
+```
 
 ![](img/8.png)
 
