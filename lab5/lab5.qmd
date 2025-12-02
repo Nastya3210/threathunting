@@ -1,0 +1,218 @@
+---
+title: "Исследование информации о состоянии беспроводных сетей"
+author: "nastya5908@yandex.ru"
+editor: visual
+format: 
+  md:
+    output-file: README.md
+---
+
+## Цель работы
+
+1.  Получить знания о методах исследования радиоэлектронной обстановки.
+2.  Составить представление о механизмах работы Wi-Fi сетей на канальном и сетевом уровне модели OSI.
+3.  Зекрепить практические навыки использования языка программирования R для обработки данных
+4.  Закрепить знания основных функций обработки данных экосистемы tidyverse языка R
+
+## Исходные данные
+
+1.  Программное обеспечение Windows 11
+2.  Rstudio Desktop
+3.  Интерпретатор языка R 4.5.1
+
+## План:
+
+1.  Импортировать и подготовить данные
+
+2.  Проанализировать данные
+
+3.  Составить отчет и выложить его и исходный qmd/rmd файл в свой репозиторий
+
+## Шаги
+
+Установим и подключим необходимые библиотеки
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(httr)
+library(jsonlite)
+```
+
+#### 1. Подготовка данных
+
+1.  Импортируйте данные
+
+```{r}
+lines <- read_lines("P2_wifi_data.csv")
+start <- which(grepl("Station MAC", lines, fixed = TRUE))
+td_data <- read_csv("P2_wifi_data.csv", n_max = start - 4)
+client_data <- read_csv("P2_wifi_data.csv", skip = start - 1)
+```
+
+2.  Привести датасеты в вид “аккуратных данных”, преобразовать типы столбцов в соответствии с типом данных
+
+```{r}
+td_clean <- td_data |>
+    rename(
+    first_seen = `First time seen`,
+    last_seen = `Last time seen`,
+    speed = Speed,
+    privacy = Privacy,
+    cipher = Cipher,
+    auth = Authentication,
+    power = Power,
+    beacons = `# beacons`,
+    iv = `# IV`,
+    lan_ip = `LAN IP`,
+    id_length = `ID-length`,
+    essid = ESSID,
+    key = Key
+  ) |>
+  mutate(
+    first_seen = as_datetime(first_seen),
+    last_seen = as_datetime(last_seen),
+    channel = as.integer(channel),
+    speed = as.integer(speed),
+    power = as.integer(power),
+    beacons = as.integer(beacons),
+    iv = as.integer(iv),
+    id_length = as.integer(id_length)) |>
+    filter(!is.na(BSSID))
+```
+
+```{r}
+client_clean <- client_data |>
+    rename(
+    station_mac = `Station MAC`,
+    first_seen = `First time seen`,
+    last_seen = `Last time seen`,
+    power = Power,
+    packets = `# packets`,
+    probed_ESSIDs = `Probed ESSIDs`
+  ) |>
+  mutate(
+    first_seen = as_datetime(first_seen),
+    last_seen = as_datetime(last_seen),
+    power = as.integer(power),
+    packets = as.integer(packets)) |>
+    filter(!is.na(BSSID))
+```
+
+3.  Просмотрите общую структуру данных с помощью функции glimpse()
+
+```{r}
+glimpse(td_clean)
+```
+
+```{r}
+glimpse(client_clean)
+```
+
+#### 2. Анализ
+
+1.  Определить небезопасные точки доступа (без шифрования – OPN)
+
+```{r}
+nebez_td <- td_clean |> filter(privacy == "OPN")
+print(nebez_td)
+```
+
+2.  Определить производителя для каждого обнаруженного устройства
+
+```{r}
+get_mac <- function(mac) {
+  url <- paste0("https://api.macvendors.com/", mac)
+  Sys.sleep(1)
+  tryCatch({
+    response <- GET(url)
+    if (status_code(response) == 200) {
+      vendor <- content(response, "text", encoding = "UTF-8")
+      return(vendor)
+    } else {return(NA)}})}
+
+nebez_td <- nebez_td |>
+  rowwise() |>
+  mutate(manufacturer = get_mac(BSSID)) |>
+  ungroup()
+```
+
+```{r}
+nebez_td |>
+     select(BSSID, manufacturer) |>
+     print(n=Inf) 
+```
+
+3.  Выявить устройства, использующие последнюю версию протокола шифрования WPA3, и названия точек доступа, реализованных на этих устройствах
+```{r}
+td_clean |> filter(str_detect(privacy, "WPA3")) |> select(BSSID, essid, privacy)
+```
+
+4.  Отсортировать точки доступа по интервалу времени, в течение которого они находились на связи, по убыванию.
+
+
+```{r}
+td_sessions <- td_clean |> arrange(BSSID, first_seen) |> group_by(BSSID) |>
+  mutate( gap_seconds = as.numeric(
+      difftime(first_seen, lag(last_seen, default = first(first_seen)))),
+      session_id = cumsum(gap_seconds > 2700) + 1) |>
+  
+  group_by(BSSID, session_id) |>
+  summarise(
+    start = min(first_seen),
+    end = max(last_seen),
+    .groups = 'drop')|>
+  
+  group_by(BSSID) |> mutate(sessions = n()) |> ungroup() |>
+  mutate(dlit = as.numeric(end - start, units = "secs")) |>
+  arrange(desc(dlit)) |> select(BSSID, sessions, start, end, dlit)
+
+td_sessions
+
+```
+5.  Обнаружить топ-10 самых быстрых точек доступа.
+```{r}
+td_clean |> filter(!is.na(speed)) |> arrange(desc(speed)) |> 
+select(BSSID, speed) |> head(10)
+```
+6.  Отсортировать точки доступа по частоте отправки запросов (beacons) в единицу времени по их убыванию.
+
+```{r}
+td_clean |> mutate(dlit = as.numeric(last_seen - first_seen),
+    beac_sec = ifelse(dlit!= 0, beacons/dlit, NA)) |> 
+  arrange(desc(beac_sec)) |>
+  select(BSSID, beac_sec, first_seen, last_seen, beacons, dlit)
+```
+
+
+#### 3. Данные клиентов
+
+1.  Определить производителя для каждого обнаруженного устройства
+
+```{r}
+#https://standards-oui.ieee.org/oui/oui.csv
+oui_db <- read.csv("oui.csv")
+get_mac_base <- function(mac) {
+  oui <- gsub(":", "", substr(mac, 1, 8))
+  result <- oui_db[oui_db$Assignment == oui, ]
+  if (nrow(result) > 0) {
+    return(result$Organization.Name[1])
+  } else {
+    return(NA)}}
+```
+
+```{r}
+client_clean <- client_clean |>
+  mutate(manufacturer = sapply(station_mac, get_mac_base))
+```
+
+```{r}
+client_clean |> select(station_mac, manufacturer) |> head(10)
+```
+
+2.  Обнаружить устройства, которые НЕ рандомизируют свой MAC адрес
+3.  Кластеризовать запросы от устройств к точкам доступа по их именам. Определить время появления устройства в зоне радиовидимости и время выхода его из нее.
+4.  Оценить стабильность уровня сигнала внури кластера во времени. Выявить наиболее стабильный кластер
+
+## Вывод
