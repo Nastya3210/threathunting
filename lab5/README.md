@@ -237,20 +237,20 @@ print(nebez_td)
 2\. Определить производителя для каждого обнаруженного устройства
 
 ``` r
+#https://standards-oui.ieee.org/oui/oui.csv
+oui_db <- read.csv("oui.csv")
 get_mac <- function(mac) {
-  url <- paste0("https://api.macvendors.com/", mac)
-  Sys.sleep(1)
-  tryCatch({
-    response <- GET(url)
-    if (status_code(response) == 200) {
-      vendor <- content(response, "text", encoding = "UTF-8")
-      return(vendor)
-    } else {return(NA)}})}
+  oui <- gsub(":", "", substr(mac, 1, 8))
+  result <- oui_db[oui_db$Assignment == oui, ]
+  if (nrow(result) > 0) {
+    return(result$Organization.Name[1])
+  } else {
+    return(NA)}}
+```
 
-nebez_td <- nebez_td |>
-  rowwise() |>
-  mutate(manufacturer = get_mac(BSSID)) |>
-  ungroup()
+``` r
+nebez_td <- nebez_td|>
+  mutate(manufacturer = sapply(BSSID, get_mac))
 ```
 
 ``` r
@@ -260,50 +260,50 @@ nebez_td |>
 ```
 
     # A tibble: 42 × 2
-       BSSID             manufacturer
-       <chr>             <lgl>       
-     1 E8:28:C1:DC:B2:52 NA          
-     2 E8:28:C1:DC:B2:50 NA          
-     3 E8:28:C1:DC:B2:51 NA          
-     4 E8:28:C1:DC:FF:F2 NA          
-     5 00:25:00:FF:94:73 NA          
-     6 E8:28:C1:DD:04:52 NA          
-     7 E8:28:C1:DE:74:31 NA          
-     8 E8:28:C1:DE:74:32 NA          
-     9 E8:28:C1:DC:C8:32 NA          
-    10 E8:28:C1:DD:04:50 NA          
-    11 E8:28:C1:DD:04:51 NA          
-    12 E8:28:C1:DC:C8:30 NA          
-    13 E8:28:C1:DE:74:30 NA          
-    14 E0:D9:E3:48:FF:D2 NA          
-    15 E8:28:C1:DC:B2:41 NA          
-    16 E8:28:C1:DC:B2:40 NA          
-    17 00:26:99:F2:7A:E0 NA          
-    18 E8:28:C1:DC:B2:42 NA          
-    19 E8:28:C1:DD:04:40 NA          
-    20 E8:28:C1:DD:04:41 NA          
-    21 E8:28:C1:DE:47:D2 NA          
-    22 02:BC:15:7E:D5:DC NA          
-    23 E8:28:C1:DC:C6:B1 NA          
-    24 E8:28:C1:DD:04:42 NA          
-    25 E8:28:C1:DC:C8:31 NA          
-    26 E8:28:C1:DE:47:D1 NA          
-    27 00:AB:0A:00:10:10 NA          
-    28 E8:28:C1:DC:C6:B0 NA          
-    29 E8:28:C1:DC:C6:B2 NA          
-    30 E8:28:C1:DC:BD:50 NA          
-    31 E8:28:C1:DC:0B:B2 NA          
-    32 E8:28:C1:DC:33:12 NA          
-    33 00:03:7A:1A:03:56 NA          
-    34 00:03:7F:12:34:56 NA          
-    35 00:3E:1A:5D:14:45 NA          
-    36 E0:D9:E3:49:00:B1 NA          
-    37 E8:28:C1:DC:BD:52 NA          
-    38 00:26:99:F2:7A:EF NA          
-    39 02:67:F1:B0:6C:98 NA          
-    40 02:CF:8B:87:B4:F9 NA          
-    41 00:53:7A:99:98:56 NA          
-    42 E8:28:C1:DE:47:D0 NA          
+       BSSID             manufacturer                
+       <chr>             <chr>                       
+     1 E8:28:C1:DC:B2:52 Eltex Enterprise Ltd.       
+     2 E8:28:C1:DC:B2:50 Eltex Enterprise Ltd.       
+     3 E8:28:C1:DC:B2:51 Eltex Enterprise Ltd.       
+     4 E8:28:C1:DC:FF:F2 Eltex Enterprise Ltd.       
+     5 00:25:00:FF:94:73 Apple, Inc.                 
+     6 E8:28:C1:DD:04:52 Eltex Enterprise Ltd.       
+     7 E8:28:C1:DE:74:31 Eltex Enterprise Ltd.       
+     8 E8:28:C1:DE:74:32 Eltex Enterprise Ltd.       
+     9 E8:28:C1:DC:C8:32 Eltex Enterprise Ltd.       
+    10 E8:28:C1:DD:04:50 Eltex Enterprise Ltd.       
+    11 E8:28:C1:DD:04:51 Eltex Enterprise Ltd.       
+    12 E8:28:C1:DC:C8:30 Eltex Enterprise Ltd.       
+    13 E8:28:C1:DE:74:30 Eltex Enterprise Ltd.       
+    14 E0:D9:E3:48:FF:D2 Eltex Enterprise Ltd.       
+    15 E8:28:C1:DC:B2:41 Eltex Enterprise Ltd.       
+    16 E8:28:C1:DC:B2:40 Eltex Enterprise Ltd.       
+    17 00:26:99:F2:7A:E0 Cisco Systems, Inc          
+    18 E8:28:C1:DC:B2:42 Eltex Enterprise Ltd.       
+    19 E8:28:C1:DD:04:40 Eltex Enterprise Ltd.       
+    20 E8:28:C1:DD:04:41 Eltex Enterprise Ltd.       
+    21 E8:28:C1:DE:47:D2 Eltex Enterprise Ltd.       
+    22 02:BC:15:7E:D5:DC <NA>                        
+    23 E8:28:C1:DC:C6:B1 Eltex Enterprise Ltd.       
+    24 E8:28:C1:DD:04:42 Eltex Enterprise Ltd.       
+    25 E8:28:C1:DC:C8:31 Eltex Enterprise Ltd.       
+    26 E8:28:C1:DE:47:D1 Eltex Enterprise Ltd.       
+    27 00:AB:0A:00:10:10 <NA>                        
+    28 E8:28:C1:DC:C6:B0 Eltex Enterprise Ltd.       
+    29 E8:28:C1:DC:C6:B2 Eltex Enterprise Ltd.       
+    30 E8:28:C1:DC:BD:50 Eltex Enterprise Ltd.       
+    31 E8:28:C1:DC:0B:B2 Eltex Enterprise Ltd.       
+    32 E8:28:C1:DC:33:12 Eltex Enterprise Ltd.       
+    33 00:03:7A:1A:03:56 Taiyo Yuden Co., Ltd.       
+    34 00:03:7F:12:34:56 Atheros Communications, Inc.
+    35 00:3E:1A:5D:14:45 <NA>                        
+    36 E0:D9:E3:49:00:B1 Eltex Enterprise Ltd.       
+    37 E8:28:C1:DC:BD:52 Eltex Enterprise Ltd.       
+    38 00:26:99:F2:7A:EF Cisco Systems, Inc          
+    39 02:67:F1:B0:6C:98 <NA>                        
+    40 02:CF:8B:87:B4:F9 <NA>                        
+    41 00:53:7A:99:98:56 <NA>                        
+    42 E8:28:C1:DE:47:D0 Eltex Enterprise Ltd.       
 
 3\. Выявить устройства, использующие последнюю версию протокола
 шифрования WPA3, и названия точек доступа, реализованных на этих
@@ -413,20 +413,8 @@ td_clean |> mutate(dlit = as.numeric(last_seen - first_seen),
 1\. Определить производителя для каждого обнаруженного устройства
 
 ``` r
-#https://standards-oui.ieee.org/oui/oui.csv
-oui_db <- read.csv("oui.csv")
-get_mac_base <- function(mac) {
-  oui <- gsub(":", "", substr(mac, 1, 8))
-  result <- oui_db[oui_db$Assignment == oui, ]
-  if (nrow(result) > 0) {
-    return(result$Organization.Name[1])
-  } else {
-    return(NA)}}
-```
-
-``` r
 client_clean <- client_clean |>
-  mutate(manufacturer = sapply(station_mac, get_mac_base))
+  mutate(manufacturer = sapply(station_mac, get_mac))
 ```
 
 ``` r

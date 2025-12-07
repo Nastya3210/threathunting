@@ -122,21 +122,22 @@ print(nebez_td)
 2\. Определить производителя для каждого обнаруженного устройства
 
 ```{r}
+#https://standards-oui.ieee.org/oui/oui.csv
+oui_db <- read.csv("oui.csv")
 get_mac <- function(mac) {
-  url <- paste0("https://api.macvendors.com/", mac)
-  Sys.sleep(1)
-  tryCatch({
-    response <- GET(url)
-    if (status_code(response) == 200) {
-      vendor <- content(response, "text", encoding = "UTF-8")
-      return(vendor)
-    } else {return(NA)}})}
-
-nebez_td <- nebez_td |>
-  rowwise() |>
-  mutate(manufacturer = get_mac(BSSID)) |>
-  ungroup()
+  oui <- gsub(":", "", substr(mac, 1, 8))
+  result <- oui_db[oui_db$Assignment == oui, ]
+  if (nrow(result) > 0) {
+    return(result$Organization.Name[1])
+  } else {
+    return(NA)}}
 ```
+
+```{r}
+nebez_td <- nebez_td|>
+  mutate(manufacturer = sapply(BSSID, get_mac))
+```
+
 
 ```{r}
 nebez_td |>
@@ -193,20 +194,8 @@ td_clean |> mutate(dlit = as.numeric(last_seen - first_seen),
 1\. Определить производителя для каждого обнаруженного устройства
 
 ```{r}
-#https://standards-oui.ieee.org/oui/oui.csv
-oui_db <- read.csv("oui.csv")
-get_mac_base <- function(mac) {
-  oui <- gsub(":", "", substr(mac, 1, 8))
-  result <- oui_db[oui_db$Assignment == oui, ]
-  if (nrow(result) > 0) {
-    return(result$Organization.Name[1])
-  } else {
-    return(NA)}}
-```
-
-```{r}
 client_clean <- client_clean |>
-  mutate(manufacturer = sapply(station_mac, get_mac_base))
+  mutate(manufacturer = sapply(station_mac, get_mac))
 ```
 
 ```{r}
