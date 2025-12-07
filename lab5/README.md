@@ -6,7 +6,7 @@ nastya5908@yandex.ru
 1.  Получить знания о методах исследования радиоэлектронной обстановки.
 2.  Составить представление о механизмах работы Wi-Fi сетей на канальном
     и сетевом уровне модели OSI.
-3.  Зекрепить практические навыки использования языка программирования R
+3.  Закрепить практические навыки использования языка программирования R
     для обработки данных
 4.  Закрепить знания основных функций обработки данных экосистемы
     tidyverse языка R
@@ -82,7 +82,7 @@ library(jsonlite)
 
 #### 1. Подготовка данных
 
-1.  Импортируйте данные
+1\. Импортируйте данные
 
 ``` r
 lines <- read_lines("P2_wifi_data.csv")
@@ -120,8 +120,8 @@ client_data <- read_csv("P2_wifi_data.csv", skip = start - 1)
     ℹ Use `spec()` to retrieve the full column specification for this data.
     ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
-1.  Привести датасеты в вид “аккуратных данных”, преобразовать типы
-    столбцов в соответствии с типом данных
+2\. Привести датасеты в вид “аккуратных данных”, преобразовать типы
+столбцов в соответствии с типом данных
 
 ``` r
 td_clean <- td_data |>
@@ -170,7 +170,7 @@ client_clean <- client_data |>
     filter(!is.na(BSSID))
 ```
 
-1.  Просмотрите общую структуру данных с помощью функции glimpse()
+3\. Просмотрите общую структуру данных с помощью функции glimpse()
 
 ``` r
 glimpse(td_clean)
@@ -210,7 +210,7 @@ glimpse(client_clean)
 
 #### 2. Анализ
 
-1.  Определить небезопасные точки доступа (без шифрования – OPN)
+1\. Определить небезопасные точки доступа (без шифрования – OPN)
 
 ``` r
 nebez_td <- td_clean |> filter(privacy == "OPN")
@@ -234,7 +234,7 @@ print(nebez_td)
     # ℹ 8 more variables: auth <chr>, power <int>, beacons <int>, iv <int>,
     #   lan_ip <chr>, id_length <int>, essid <chr>, key <lgl>
 
-1.  Определить производителя для каждого обнаруженного устройства
+2\. Определить производителя для каждого обнаруженного устройства
 
 ``` r
 get_mac <- function(mac) {
@@ -260,54 +260,54 @@ nebez_td |>
 ```
 
     # A tibble: 42 × 2
-       BSSID             manufacturer                
-       <chr>             <chr>                       
-     1 E8:28:C1:DC:B2:52 Eltex Enterprise Ltd.       
-     2 E8:28:C1:DC:B2:50 Eltex Enterprise Ltd.       
-     3 E8:28:C1:DC:B2:51 Eltex Enterprise Ltd.       
-     4 E8:28:C1:DC:FF:F2 Eltex Enterprise Ltd.       
-     5 00:25:00:FF:94:73 Apple, Inc.                 
-     6 E8:28:C1:DD:04:52 Eltex Enterprise Ltd.       
-     7 E8:28:C1:DE:74:31 Eltex Enterprise Ltd.       
-     8 E8:28:C1:DE:74:32 Eltex Enterprise Ltd.       
-     9 E8:28:C1:DC:C8:32 Eltex Enterprise Ltd.       
-    10 E8:28:C1:DD:04:50 Eltex Enterprise Ltd.       
-    11 E8:28:C1:DD:04:51 Eltex Enterprise Ltd.       
-    12 E8:28:C1:DC:C8:30 Eltex Enterprise Ltd.       
-    13 E8:28:C1:DE:74:30 Eltex Enterprise Ltd.       
-    14 E0:D9:E3:48:FF:D2 Eltex Enterprise Ltd.       
-    15 E8:28:C1:DC:B2:41 Eltex Enterprise Ltd.       
-    16 E8:28:C1:DC:B2:40 Eltex Enterprise Ltd.       
-    17 00:26:99:F2:7A:E0 Cisco Systems, Inc          
-    18 E8:28:C1:DC:B2:42 Eltex Enterprise Ltd.       
-    19 E8:28:C1:DD:04:40 Eltex Enterprise Ltd.       
-    20 E8:28:C1:DD:04:41 Eltex Enterprise Ltd.       
-    21 E8:28:C1:DE:47:D2 Eltex Enterprise Ltd.       
-    22 02:BC:15:7E:D5:DC <NA>                        
-    23 E8:28:C1:DC:C6:B1 Eltex Enterprise Ltd.       
-    24 E8:28:C1:DD:04:42 Eltex Enterprise Ltd.       
-    25 E8:28:C1:DC:C8:31 Eltex Enterprise Ltd.       
-    26 E8:28:C1:DE:47:D1 Eltex Enterprise Ltd.       
-    27 00:AB:0A:00:10:10 <NA>                        
-    28 E8:28:C1:DC:C6:B0 Eltex Enterprise Ltd.       
-    29 E8:28:C1:DC:C6:B2 Eltex Enterprise Ltd.       
-    30 E8:28:C1:DC:BD:50 Eltex Enterprise Ltd.       
-    31 E8:28:C1:DC:0B:B2 Eltex Enterprise Ltd.       
-    32 E8:28:C1:DC:33:12 Eltex Enterprise Ltd.       
-    33 00:03:7A:1A:03:56 Taiyo Yuden Co., Ltd.       
-    34 00:03:7F:12:34:56 Atheros Communications, Inc.
-    35 00:3E:1A:5D:14:45 <NA>                        
-    36 E0:D9:E3:49:00:B1 Eltex Enterprise Ltd.       
-    37 E8:28:C1:DC:BD:52 Eltex Enterprise Ltd.       
-    38 00:26:99:F2:7A:EF Cisco Systems, Inc          
-    39 02:67:F1:B0:6C:98 <NA>                        
-    40 02:CF:8B:87:B4:F9 <NA>                        
-    41 00:53:7A:99:98:56 <NA>                        
-    42 E8:28:C1:DE:47:D0 Eltex Enterprise Ltd.       
+       BSSID             manufacturer
+       <chr>             <lgl>       
+     1 E8:28:C1:DC:B2:52 NA          
+     2 E8:28:C1:DC:B2:50 NA          
+     3 E8:28:C1:DC:B2:51 NA          
+     4 E8:28:C1:DC:FF:F2 NA          
+     5 00:25:00:FF:94:73 NA          
+     6 E8:28:C1:DD:04:52 NA          
+     7 E8:28:C1:DE:74:31 NA          
+     8 E8:28:C1:DE:74:32 NA          
+     9 E8:28:C1:DC:C8:32 NA          
+    10 E8:28:C1:DD:04:50 NA          
+    11 E8:28:C1:DD:04:51 NA          
+    12 E8:28:C1:DC:C8:30 NA          
+    13 E8:28:C1:DE:74:30 NA          
+    14 E0:D9:E3:48:FF:D2 NA          
+    15 E8:28:C1:DC:B2:41 NA          
+    16 E8:28:C1:DC:B2:40 NA          
+    17 00:26:99:F2:7A:E0 NA          
+    18 E8:28:C1:DC:B2:42 NA          
+    19 E8:28:C1:DD:04:40 NA          
+    20 E8:28:C1:DD:04:41 NA          
+    21 E8:28:C1:DE:47:D2 NA          
+    22 02:BC:15:7E:D5:DC NA          
+    23 E8:28:C1:DC:C6:B1 NA          
+    24 E8:28:C1:DD:04:42 NA          
+    25 E8:28:C1:DC:C8:31 NA          
+    26 E8:28:C1:DE:47:D1 NA          
+    27 00:AB:0A:00:10:10 NA          
+    28 E8:28:C1:DC:C6:B0 NA          
+    29 E8:28:C1:DC:C6:B2 NA          
+    30 E8:28:C1:DC:BD:50 NA          
+    31 E8:28:C1:DC:0B:B2 NA          
+    32 E8:28:C1:DC:33:12 NA          
+    33 00:03:7A:1A:03:56 NA          
+    34 00:03:7F:12:34:56 NA          
+    35 00:3E:1A:5D:14:45 NA          
+    36 E0:D9:E3:49:00:B1 NA          
+    37 E8:28:C1:DC:BD:52 NA          
+    38 00:26:99:F2:7A:EF NA          
+    39 02:67:F1:B0:6C:98 NA          
+    40 02:CF:8B:87:B4:F9 NA          
+    41 00:53:7A:99:98:56 NA          
+    42 E8:28:C1:DE:47:D0 NA          
 
-1.  Выявить устройства, использующие последнюю версию протокола
-    шифрования WPA3, и названия точек доступа, реализованных на этих
-    устройствах
+3\. Выявить устройства, использующие последнюю версию протокола
+шифрования WPA3, и названия точек доступа, реализованных на этих
+устройствах
 
 ``` r
 td_clean |> filter(str_detect(privacy, "WPA3")) |> select(BSSID, essid, privacy)
@@ -325,8 +325,8 @@ td_clean |> filter(str_detect(privacy, "WPA3")) |> select(BSSID, essid, privacy)
     7 3A:DA:00:F9:0C:02 "iPhone XS Max \U0001f98a\U0001f431\U0001f98a" WPA3 WPA2
     8 76:C5:A0:70:08:96  <NA>                                          WPA3 WPA2
 
-1.  Отсортировать точки доступа по интервалу времени, в течение которого
-    они находились на связи, по убыванию.
+4\. Отсортировать точки доступа по интервалу времени, в течение которого
+они находились на связи, по убыванию.
 
 ``` r
 td_sessions <- td_clean |> arrange(BSSID, first_seen) |> group_by(BSSID) |>
@@ -362,7 +362,7 @@ td_sessions
     10 8E:55:4A:85:5B:01        1 2023-07-28 09:13:06 2023-07-28 11:55:09  9723
     # ℹ 157 more rows
 
-1.  Обнаружить топ-10 самых быстрых точек доступа.
+5\. Обнаружить топ-10 самых быстрых точек доступа.
 
 ``` r
 td_clean |> filter(!is.na(speed)) |> arrange(desc(speed)) |> 
@@ -383,8 +383,8 @@ select(BSSID, speed) |> head(10)
      9 E8:28:C1:DC:B2:40   360
     10 E8:28:C1:DC:B2:42   360
 
-1.  Отсортировать точки доступа по частоте отправки запросов (beacons) в
-    единицу времени по их убыванию.
+6\. Отсортировать точки доступа по частоте отправки запросов (beacons) в
+единицу времени по их убыванию.
 
 ``` r
 td_clean |> mutate(dlit = as.numeric(last_seen - first_seen),
@@ -410,7 +410,7 @@ td_clean |> mutate(dlit = as.numeric(last_seen - first_seen),
 
 #### 3. Данные клиентов
 
-1.  Определить производителя для каждого обнаруженного устройства
+1\. Определить производителя для каждого обнаруженного устройства
 
 ``` r
 #https://standards-oui.ieee.org/oui/oui.csv
@@ -447,11 +447,73 @@ client_clean |> select(station_mac, manufacturer) |> head(10)
      9 8A:A3:5A:33:76:57 <NA>                                
     10 CA:54:C4:8B:B5:3A <NA>                                
 
-1.  Обнаружить устройства, которые НЕ рандомизируют свой MAC адрес
-2.  Кластеризовать запросы от устройств к точкам доступа по их именам.
-    Определить время появления устройства в зоне радиовидимости и время
-    выхода его из нее.
-3.  Оценить стабильность уровня сигнала внури кластера во времени.
-    Выявить наиболее стабильный кластер
+2\. Обнаружить устройства, которые НЕ рандомизируют свой MAC адрес
+
+``` r
+client_clean |> 
+  filter(!substr(station_mac, 2, 2) %in% c("2", "6", "a", "A", "e", "E")) |>
+  distinct(station_mac)
+```
+
+    # A tibble: 220 × 1
+       station_mac      
+       <chr>            
+     1 5C:3A:45:9E:1A:7B
+     2 C0:E4:34:D8:E7:E5
+     3 10:51:07:CB:33:E7
+     4 68:54:5A:40:35:9E
+     5 74:4C:A1:70:CE:F7
+     6 BC:F1:71:D4:DB:04
+     7 4C:44:5B:14:76:E3
+     8 A0:E7:0B:AE:D5:44
+     9 00:95:69:E7:7F:35
+    10 00:95:69:E7:7C:ED
+    # ℹ 210 more rows
+
+3\. Кластеризовать запросы от устройств к точкам доступа по их именам.
+Определить время появления устройства в зоне радиовидимости и время
+выхода его из нее.
+
+``` r
+requests <- client_clean |>
+  filter(!is.na(probed_ESSIDs)) |>
+  mutate(cluster = str_split(probed_ESSIDs, ",")) |>
+  unnest(cluster)
+  
+  
+clust <- requests|> group_by(station_mac, cluster) |>
+  summarise(
+    first_appearance = min(first_seen, na.rm = TRUE),
+    last_appearance  = max(last_seen,  na.rm = TRUE),
+    dlit = as.numeric(difftime(last_appearance, first_appearance)),
+    .groups = "drop"
+  ) |>
+  arrange(station_mac, first_appearance)
+```
+
+4\. Оценить стабильность уровня сигнала внури кластера во времени.
+Выявить наиболее стабильный кластер
+
+``` r
+stability <- requests |>
+  group_by(cluster) |>
+  summarise(
+    n_requests = n(),
+    mean_power = mean(power, na.rm = TRUE),
+    sd_power   = if (n() == 1) 0 else sd(power, na.rm = TRUE),
+    .groups = "drop") |>
+  filter(n_requests >= 5) |> arrange(sd_power)  
+
+stability |> slice_min(sd_power, n = 1)
+```
+
+    # A tibble: 1 × 4
+      cluster n_requests mean_power sd_power
+      <chr>        <int>      <dbl>    <dbl>
+    1 MT_FREE          7      -64.7     2.69
 
 ## Вывод
+
+В результате выполнения работы были получены знания о методах
+исследования радиоэлектронной обстановки и закреплены практические
+навыки использования языка программирования R для обработки данных
