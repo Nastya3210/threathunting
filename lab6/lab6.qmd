@@ -1,0 +1,127 @@
+---
+title: "Исследование вредоносной активности в домене Windows"
+author: "nastya5908@yandex.ru"
+editor: visual
+format: 
+  md:
+    output-file: README.md
+---
+
+## Цель работы
+
+1.  Закрепить навыки исследования данных журнала Windows Active Directory
+2.  Изучить структуру журнала системы Windows Active Directory
+3.  Закрепить практические навыки использования языка программирования R для обработки данных
+4.  Закрепить знания основных функций обработки данных экосистемы tidyverse языка R
+
+## Исходные данные
+
+1.  Программное обеспечение Windows 11
+2.  Rstudio Desktop
+3.  Интерпретатор языка R 4.5.1
+
+## План:
+
+1.  Импортировать и подготовить данные
+
+2.  Проанализировать данные
+
+3.  Составить отчет и выложить его и исходный qmd/rmd файл в свой репозиторий
+
+## Шаги
+
+Установим и подключим необходимые библиотеки
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+```
+
+#### Подготовка данных
+
+1\.  Импортируйте данные в R. Это можно выполнить с помощью jsonlite::stream_in(file()). Датасет находится по адресу https://storage.yandexcloud.net/iamcth-data/dataset.tar.gz.
+```{r}
+download.file(
+  url = "https://storage.yandexcloud.net/iamcth-data/dataset.tar.gz",
+  destfile = "dataset.tar.gz"
+)
+```
+```{r}
+untar("dataset.tar.gz", exdir = ".")
+data <-jsonlite::stream_in(file("caldera_attack_evals_round1_day1_2019-10-20201108.json"), verbose = FALSE)
+```
+2\.  Привести датасеты в вид “аккуратных данных”, преобразовать типы столбцов в соответствии с типом данных
+```{r}
+data <- data |>
+  rename(metadata = `@metadata`, 
+         timestamp = `@timestamp`)
+```
+
+3\.  Просмотрите общую структуру данных с помощью функции glimpse()
+```{r}
+glimpse(data)
+```
+
+#### Анализ
+
+1\.  Раскройте датафрейм избавившись от вложенных датафреймов. 
+```{r}
+data <- unnest(data, cols = c(metadata, event, log, winlog, ecs, host, agent), 
+                      names_sep = "_")
+```
+```{r}
+glimpse(data)
+```
+
+2\.  Минимизируйте количество колонок в датафрейме – уберите колонки с единственным значением параметра.
+```{r}
+data <- data |> 
+  select(where(~ n_distinct(., na.rm = TRUE) > 1))
+glimpse(data)
+```
+3\.  Какое количество хостов представлено в данном датасете?
+```{r}
+n_distinct(data$winlog_computer_name)
+```
+
+4\.  Подготовьте датафрейм с расшифровкой Windows Event_ID, приведите типы данных к типу их значений.
+```{r}
+library(xml2)
+library(rvest)
+webpage_url <- "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/appendix-l--events-to-monitor"
+webpage <- xml2::read_html(webpage_url)
+event_df <- rvest::html_table(webpage, fill = TRUE)[[1]]
+```
+
+```{r}
+event_df <- event_df |>
+  rename(
+    event_id = `Current Windows Event ID`,
+    legacy_event_id = `Legacy Windows Event ID`,
+    criticality = `Potential Criticality`,
+    description = `Event Summary`
+  ) |>
+  mutate(
+    event_id = as.integer(event_id),
+    legacy_event_id = as.integer(legacy_event_id),
+  )
+
+glimpse(event_df)
+```
+5\.  Есть ли в логе события с высоким и средним уровнем значимости? Сколько их?
+```{r}
+result <- data |>
+  select(event_id = winlog_event_id) |>
+  inner_join(event_df |> select(event_id, criticality), by = "event_id") |>
+  filter(criticality %in% c("High", "Medium")) |>
+  count(criticality, .drop = FALSE)
+
+print(result)
+```
+```{r}
+cat(sum(result$n), "событий")
+```
+## Вывод
+
+В результате выполнения работы были получены навыки исследования данных журнала Windows Active Directory и закреплены практические навыки использования языка программирования R для обработки данных
